@@ -1,6 +1,6 @@
 train: ../train/images
-val: ../train/images
-test: ../train/images
+val: ../valid/images
+test: ../test/images
 
 nc: 1
 names: ['Robot-YfA7']
@@ -8,6 +8,6 @@ names: ['Robot-YfA7']
 roboflow:
   workspace: robotrecognizer
   project: robot-recognition-v4p8q
-  version: 1
+  version: 4
   license: Private
-  url: https://app.roboflow.com/robotrecognizer/robot-recognition-v4p8q/1
+  url: https://app.roboflow.com/robotrecognizer/robot-recognition-v4p8q/4

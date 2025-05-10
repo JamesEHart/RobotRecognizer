@@ -3,7 +3,7 @@ val: ../valid/images
 test: ../test/images
 
 nc: 1
-names: ['Robot-YfA7']
+names: ['Robot']
 
 roboflow:
   workspace: robotrecognizer

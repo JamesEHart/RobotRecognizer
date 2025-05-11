@@ -2,9 +2,9 @@ from ultralytics import YOLO
 import cv2
 import numpy as np
 import sys
-sys.path.append('./sort')  # Add the sort folder to the Python path
+sys.path.append('./sort')
 
-from sort import Sort  # Now you can use the tracker
+from sort import Sort
 
 # === Load YOLO model ===
 model = YOLO('./runs/detect/my_yolo_model11/weights/best.pt')
@@ -22,14 +22,13 @@ fps = cap.get(cv2.CAP_PROP_FPS)
 fourcc = cv2.VideoWriter_fourcc(*'mp4v')
 out = cv2.VideoWriter('output_video.mp4', fourcc, fps, (width, height))
 
-# === Initialize trace image ===
-trace_img = np.zeros((height, width, 3), dtype=np.uint8)
-
 # === Initialize SORT tracker ===
-tracker = Sort(max_age=10, min_hits=2, iou_threshold=0.3)
+tracker = Sort(max_age=60, min_hits=2, iou_threshold=0.3)
 
 # === Robot path history ===
 robot_paths = {}
+# A dictionary to store robot's trace color
+robot_colors = {}
 
 frame_count = 0
 
@@ -38,7 +37,6 @@ while cap.isOpened():
     if not ret:
         break
 
-    # Stop after 30 seconds
     if frame_count > fps * 30:
         break
 
@@ -62,9 +60,16 @@ while cap.isOpened():
         detections_np = np.array(detections)
         tracks = tracker.update(detections_np)
 
+        # Initialize a temporary image to draw the trace on
+        trace_img = np.zeros((height, width, 3), dtype=np.uint8)
+
         for track in tracks:
             x1, y1, x2, y2, track_id = track.astype(int)
             center = (int((x1 + x2) / 2), int((y1 + y2) / 2))
+
+            # Generate random color for robot if not assigned
+            if track_id not in robot_colors:
+                robot_colors[track_id] = (np.random.randint(0, 255), np.random.randint(0, 255), np.random.randint(0, 255))
 
             # Draw bounding box and label
             cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
@@ -76,15 +81,19 @@ while cap.isOpened():
                 robot_paths[track_id] = []
             robot_paths[track_id].append(center)
 
-            # Draw trace line on trace image
+            # Draw trace line on the trace_img
             if len(robot_paths[track_id]) > 1:
                 for i in range(1, len(robot_paths[track_id])):
                     pt1 = robot_paths[track_id][i - 1]
                     pt2 = robot_paths[track_id][i]
-                    cv2.line(trace_img, pt1, pt2, (0, 0, 255), 2)
+                    cv2.line(trace_img, pt1, pt2, robot_colors[track_id], 2)
 
-    # Write frame to output
-    out.write(frame)
+        # Overlay trace lines on the current frame
+        frame_with_trace = cv2.addWeighted(frame, 1, trace_img, 0.5, 0)
+
+        # Write frame with trace lines to the output video
+        out.write(frame_with_trace)
+
     frame_count += 1
 
 # === Save final trace image ===
